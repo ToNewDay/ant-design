@@ -22,6 +22,8 @@ import devWarning from '../_util/devWarning';
 import SizeContext, { SizeType } from '../config-provider/SizeContext';
 import { replaceElement } from '../_util/reactNode';
 import { getTransitionName } from '../_util/motion';
+import MultipleRcCascader from './MultipleRcCascader';
+
 
 export interface CascaderOptionType {
   value?: string | number;
@@ -125,6 +127,10 @@ export interface CascaderProps {
   autoComplete?: string;
   transitionName?: string;
   children?: React.ReactElement;
+
+  // Support multiple select
+  mode?: 'multiple' | 'normal';
+
 }
 
 export interface CascaderState {
@@ -151,11 +157,11 @@ function highlightKeyword(str: string, keyword: string, prefixCls: string | unde
     index === 0
       ? node
       : [
-          <span className={`${prefixCls}-menu-item-keyword`} key="seperator">
-            {keyword}
-          </span>,
-          node,
-        ],
+        <span className={`${prefixCls}-menu-item-keyword`} key="seperator">
+          {keyword}
+        </span>,
+        node,
+      ],
   );
 }
 
@@ -447,14 +453,14 @@ class Cascader extends React.Component<CascaderProps, CascaderState> {
 
       return filtered.map(
         (path: CascaderOptionType[]) =>
-          ({
-            __IS_FILTERED_OPTION: true,
-            path,
-            [field]: path.map((o: CascaderOptionType) => o[names.value]),
-            [names.label]: render(inputValue, path, prefixCls, names),
-            disabled: path.some((o: CascaderOptionType) => !!o.disabled),
-            isEmptyNode: true,
-          } as CascaderOptionType),
+        ({
+          __IS_FILTERED_OPTION: true,
+          path,
+          [field]: path.map((o: CascaderOptionType) => o[names.value]),
+          [names.label]: render(inputValue, path, prefixCls, names),
+          disabled: path.some((o: CascaderOptionType) => !!o.disabled),
+          isEmptyNode: true,
+        } as CascaderOptionType),
       );
     }
     return [getEmptyNode(renderEmpty, names, notFoundContent)];
@@ -505,6 +511,7 @@ class Cascader extends React.Component<CascaderProps, CascaderState> {
           popupClassName,
           bordered,
           dropdownRender,
+          mode = 'normal',
           ...otherProps
         } = props;
 
@@ -669,6 +676,31 @@ class Cascader extends React.Component<CascaderProps, CascaderState> {
             options.length === 1 && options[0].value === 'ANT_CASCADER_NOT_FOUND',
         });
         const rootPrefixCls = getPrefixCls();
+
+        if (mode === 'multiple') {
+          return (
+            <MultipleRcCascader
+              {...rest}
+              prefixCls={prefixCls}
+              getPopupContainer={getPopupContainer}
+              options={options}
+              value={value}
+              popupVisible={state.popupVisible}
+              onPopupVisibleChange={this.handlePopupVisibleChange}
+              onChange={this.setValue}
+              dropdownMenuColumnStyle={dropdownMenuColumnStyle}
+              expandIcon={expandIconNode}
+              loadingIcon={loadingIcon}
+              popupClassName={rcCascaderPopupClassName}
+              popupPlacement={this.getPopupPlacement(direction)}
+              // rc-cascader should update ts define to fix this case
+              dropdownRender={dropdownRender as any}
+              transitionName={getTransitionName(rootPrefixCls, 'slide-up', props.transitionName)}
+              inputIcon={inputIcon}
+              clearIcon={clearIcon}
+            />
+          );
+        }
 
         return (
           <RcCascader
